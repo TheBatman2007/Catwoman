@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catwoman AI - Authentication Nexus</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary: #ff00d4;
+            --primary-dark: #b100ff;
+            --secondary: #00eeff;
+            --dark: #0a001a;
+            --light: #ffffff;
+            --glow: 0 0 20px var(--primary), 0 0 40px var(--primary-dark);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background: radial-gradient(circle at center, #220037, #0a0010);
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .interface-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 1;
+        }
+
+        header {
+            background: linear-gradient(135deg, rgba(255, 0, 212, 0.2), rgba(176, 0, 255, 0.2));
+            backdrop-filter: blur(10px);
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 212, 0.2);
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            text-shadow: 0 0 10px var(--secondary);
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            perspective: 1000px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 450px;
+            background: rgba(10, 0, 26, 0.8);
+            border: 2px solid rgba(255, 0, 212, 0.5);
+            border-radius: 15px;
+            padding: 2.5rem;
+            box-shadow: 0 0 40px rgba(255, 0, 212, 0.3);
+            transform-style: preserve-3d;
+            position: relative;
+            backdrop-filter: blur(5px);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+            50% { transform: translateY(-20px) rotateX(2deg) rotateY(2deg); }
+        }
+
+        .form-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 0, 212, 0.3);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--light);
+            text-shadow: 0 0 10px var(--primary);
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--secondary);
+            border-bottom: 3px solid var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
+        }
+
+        .form-container {
+            display: none;
+            transform-style: preserve-3d;
+        }
+
+        .form-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateZ(-50px); }
+            to { opacity: 1; transform: translateZ(0); }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: var(--light);
+            text-shadow: 0 0 5px var(--primary);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 0, 212, 0.5);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 212, 0.2);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.5);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 0, 212, 0.6);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+            transition: all 0.6s ease;
+        }
+
+        button:hover::before {
+            transform: translateX(100%);
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .forgot-password a {
+            color: var(--secondary);
+            text-decoration: none;
+            text-shadow: 0 0 10px var(--secondary);
+            transition: all 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            text-shadow: 0 0 20px var(--secondary);
+        }
+
+        .error-message {
+            color: #ff4d4d;
+            background: rgba(255, 77, 77, 0.1);
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+            text-shadow: 0 0 5px #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.5);
+        }
+
+        .success-message {
+            color: var(--secondary);
+            background: rgba(0, 238, 255, 0.1);
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+            text-shadow: 0 0 5px var(--secondary);
+            border: 1px solid rgba(0, 238, 255, 0.5);
+        }
+
+        .back-to-site {
+            position: absolute;
+            top: -2.5rem;
+            left: 0;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            text-shadow: 0 0 10px var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .back-to-site:hover {
+            transform: translateX(-5px);
+            text-shadow: 0 0 20px var(--primary);
+        }
+
+        .back-to-site:before {
+            content: "←";
+            margin-right: 0.5rem;
+        }
+
+        footer {
+            background: linear-gradient(135deg, rgba(10, 0, 26, 0.8), rgba(34, 0, 55, 0.8));
+            padding: 1.5rem 0;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.2);
+        }
+
+        footer p {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 10px var(--primary);
+        }
+
+        .energy-rings {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            z-index: 0;
+        }
+
+        .energy-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.5);
+        }
+
+        .ring1 {
+            width: 400px;
+            height: 400px;
+            animation: rotate 20s linear infinite;
+        }
+
+        .ring2 {
+            width: 500px;
+            height: 500px;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.5);
+            animation: rotate 25s linear infinite reverse;
+        }
+
+        .ring3 {
+            width: 600px;
+            height: 600px;
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .floating-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at center, var(--primary), transparent 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: float-up var(--duration) ease-in-out infinite;
+            opacity: var(--opacity);
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(100vh) translateX(0) scale(1);
+                opacity: var(--opacity);
+            }
+            100% {
+                transform: translateY(-100px) translateX(var(--shift)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .status-indicators {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--secondary);
+            box-shadow: 0 0 10px var(--secondary);
+            animation: blink 2s infinite alternate;
+        }
+
+        .status-indicator:nth-child(2) {
+            animation-delay: 0.5s;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .status-indicator:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        @keyframes blink {
+            0%, 80% { opacity: 1; }
+            90%, 100% { opacity: 0.5; }
+        }
+
+        .holographic-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(255, 0, 212, 0.1) 30%,
+                rgba(0, 238, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg);
+            animation: holographic-sweep 6s linear infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        @keyframes holographic-sweep {
+            0% { transform: rotate(45deg) translateY(-100%); }
+            100% { transform: rotate(45deg) translateY(100%); }
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 1.5rem;
+                max-width: 90%;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .subtitle {
+                font-size: 1rem;
+            }
+            .energy-rings {
+                width: 400px;
+                height: 400px;
+            }
+            .ring1 { width: 250px; height: 250px; }
+            .ring2 { width: 325px; height: 325px; }
+            .ring3 { width: 400px; height: 400px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="interface-container">
+        <div class="status-indicators">
+            <div class="status-indicator"></div>
+            <div class="status-indicator"></div>
+            <div class="status-indicator"></div>
+        </div>
+
+        <header>
+            <h1>Catwoman AI - Authentication Nexus</h1>
+            <p class="subtitle">Secure Access to Multiversal Systems</p>
+        </header>
+
+        <div class="main-container">
+            <div class="energy-rings">
+                <div class="energy-ring ring1"></div>
+                <div class="energy-ring ring2"></div>
+                <div class="energy-ring ring3"></div>
+            </div>
+
+            <div class="auth-container">
+                <a href="index.html" class="back-to-site">Back to Gotham Network</a>
+                
+                <div class="form-tabs">
+                    <div class="tab active" id="login-tab">Access Vault</div>
+                    <div class="tab" id="signup-tab">Create Identity</div>
+                </div>
+
+                <div class="error-message" id="error-message"></div>
+                <div class="success-message" id="success-message"></div>
+
+                <div class="form-container active" id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Quantum ID (Email)</label>
+                        <input type="email" id="login-email" placeholder="Enter your quantum ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Security Code (Password)</label>
+                        <input type="password" id="login-password" placeholder="Enter your security code">
+                    </div>
+                    <button id="login-button">Initiate Access</button>
+                    <div class="forgot-password">
+                        <a href="#" id="forgot-password-link">Code Reset?</a>
+                    </div>
+                </div>
+
+                <div class="form-container" id="signup-form">
+                    <div class="form-group">
+                        <label for="signup-name">Alias</label>
+                        <input type="text" id="signup-name" placeholder="Enter your alias (e.g., Selina)">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Quantum ID (Email)</label>
+                        <input type="email" id="signup-email" placeholder="Enter your quantum ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Security Code (Password)</label>
+                        <input type="password" id="signup-password" placeholder="Create code (min. 6 digits)">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-confirm-password">Confirm Code</label>
+                        <input type="password" id="signup-confirm-password" placeholder="Confirm your code">
+                    </div>
+                    <button id="signup-button">Forge Identity</button>
+                </div>
+
+                <div class="form-container" id="reset-form">
+                    <div class="form-group">
+                        <label for="reset-email">Quantum ID (Email)</label>
+                        <input type="email" id="reset-email" placeholder="Enter your quantum ID">
+                    </div>
+                    <button id="reset-button">Transmit Reset Signal</button>
+                    <div class="forgot-password">
+                        <a href="#" id="back-to-login-link">Return to Access</a>
+                    </div>
+                </div>
+
+                <div class="holographic-overlay"></div>
+            </div>
+
+            <div class="floating-particles" id="floating-particles"></div>
+        </div>
+
+        <footer>
+            <p>© 2025 Catwoman AI Systems. All Rights Reserved by the Batman of Gotham.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBN9oUtx5JQ8yu0wJdWISwG-3X1zF52Y7o",
+            authDomain: "login-page-smart-fem.firebaseapp.com",
+            projectId: "login-page-smart-fem",
+            storageBucket: "login-page-smart-fem.firebasestorage.app",
+            messagingSenderId: "593766041873",
+            appId: "1:593766041873:web:ad5982efa7aaecb8b0a4b0"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // THREE.js setup
+        const canvas = document.getElementById('canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        // Galaxy particles
+        const galaxyGeometry = new THREE.BufferGeometry();
+        const galaxyMaterial = new THREE.PointsMaterial({
+            size: 0.02,
+            transparent: true,
+            opacity: 0.8,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        const galaxyParams = {
+            count: 15000,
+            size: 0.01,
+            radius: 12,
+            branches: 6,
+            spin: 1.2,
+            randomness: 0.3,
+            randomnessPower: 3,
+            insideColor: new THREE.Color('#ff00d4'),
+            outsideColor: new THREE.Color('#00eeff')
+        };
+
+        let galaxyPoints = null;
+
+        const generateGalaxy = () => {
+            if (galaxyPoints !== null) {
+                galaxyGeometry.dispose();
+                galaxyMaterial.dispose();
+                scene.remove(galaxyPoints);
+            }
+
+            const positions = new Float32Array(galaxyParams.count * 3);
+            const colors = new Float32Array(galaxyParams.count * 3);
+            const colorInside = new THREE.Color(galaxyParams.insideColor);
+            const colorOutside = new THREE.Color(galaxyParams.outsideColor);
+
+            for (let i = 0; i < galaxyParams.count; i++) {
+                const i3 = i * 3;
+                const radius = Math.random() * galaxyParams.radius;
+                const spinAngle = radius * galaxyParams.spin;
+                const branchAngle = (i % galaxyParams.branches) / galaxyParams.branches * Math.PI * 2;
+
+                const randomX = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                const randomY = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                const randomZ = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+
+                positions[i3    ] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+                positions[i3 + 1] = randomY;
+                positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+                const mixedColor = colorInside.clone();
+                mixedColor.lerp(colorOutside, radius / galaxyParams.radius);
+
+                colors[i3    ] = mixedColor.r;
+                colors[i3 + 1] = mixedColor.g;
+                colors[i3 + 2] = mixedColor.b;
+            }
+
+            galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
+            scene.add(galaxyPoints);
+        };
+
+        generateGalaxy();
+
+        // Energy sphere particles
+        const sphereGeometry = new THREE.BufferGeometry();
+        const sphereParams = { count: 3000, radius: 2.5 };
+        const spherePositions = new Float32Array(sphereParams.count * 3);
+        const sphereColors = new Float32Array(sphereParams.count * 3);
+
+        for (let i = 0; i < sphereParams.count; i++) {
+            const i3 = i * 3;
+            const phi = Math.acos(-1 + (2 * i) / sphereParams.count);
+            const theta = Math.sqrt(sphereParams.count * Math.PI) * phi;
+
+            spherePositions[i3] = sphereParams.radius * Math.sin(phi) * Math.cos(theta);
+            spherePositions[i3 + 1] = sphereParams.radius * Math.sin(phi) * Math.sin(theta);
+            spherePositions[i3 + 2] = sphereParams.radius * Math.cos(phi);
+
+            spherePositions[i3] += (Math.random() - 0.5) * 0.4;
+            spherePositions[i3 + 1] += (Math.random() - 0.5) * 0.4;
+            spherePositions[i3 + 2] += (Math.random() - 0.5) * 0.4;
+
+            const mixRatio = Math.random();
+            sphereColors[i3] = mixRatio * 1.0;
+            sphereColors[i3 + 1] = 0.0;
+            sphereColors[i3 + 2] = (1 - mixRatio) * 1.0;
+        }
+
+        sphereGeometry.setAttribute('position', new THREE.BufferAttribute(spherePositions, 3));
+        sphereGeometry.setAttribute('color', new THREE.BufferAttribute(sphereColors, 3));
+
+        const sphereMaterial = new THREE.PointsMaterial({
+            size: 0.03,
+            transparent: true,
+            opacity: 0.8,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        const energySphere = new THREE.Points(sphereGeometry, sphereMaterial);
+        scene.add(energySphere);
+
+        const ambientLight = new THREE.AmbientLight(0x220033, 0.6);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xff00d4, 1.2, 12);
+        pointLight.position.set(0, 0, 4);
+        scene.add(pointLight);
+
+        const clock = new THREE.Clock();
+
+        const animate = () => {
+            const elapsedTime = clock.getElapsedTime();
+            galaxyPoints.rotation.y = elapsedTime * 0.04;
+            galaxyPoints.rotation.z = elapsedTime * 0.015;
+            energySphere.rotation.y = elapsedTime * -0.08;
+            energySphere.rotation.x = elapsedTime * 0.06;
+            const scale = 1 + Math.sin(elapsedTime * 0.9) * 0.12;
+            energySphere.scale.set(scale, scale, scale);
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // DOM Elements
+        const loginTab = document.getElementById('login-tab');
+        const signupTab = document.getElementById('signup-tab');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const resetForm = document.getElementById('reset-form');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const backToLoginLink = document.getElementById('back-to-login-link');
+        const loginButton = document.getElementById('login-button');
+        const signupButton = document.getElementById('signup-button');
+        const resetButton = document.getElementById('reset-button');
+        const particlesContainer = document.getElementById('floating-particles');
+
+        // Tab switching logic
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            loginForm.classList.add('active');
+            signupForm.classList.remove('active');
+            resetForm.classList.remove('active');
+            clearMessages();
+        });
+
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            loginTab.classList.remove('active');
+            signupForm.classList.add('active');
+            loginForm.classList.remove('active');
+            resetForm.classList.remove('active');
+            clearMessages();
+        });
+
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.classList.remove('active');
+            signupForm.classList.remove('active');
+            resetForm.classList.add('active');
+            clearMessages();
+        });
+
+        backToLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            resetForm.classList.remove('active');
+            loginForm.classList.add('active');
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            clearMessages();
+        });
+
+        // Clear messages
+        function clearMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            gsap.from(errorMessage, { opacity: 0, y: -20, duration: 0.5 });
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            gsap.from(successMessage, { opacity: 0, y: -20, duration: 0.5 });
+        }
+
+        // Floating particles
+        const createFloatingParticles = () => {
+            particlesContainer.innerHTML = '';
+            const particleCount = 30;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('floating-particle');
+
+                const size = Math.random() * 10 + 5;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 20 + 10;
+                const delay = Math.random() * 10;
+                const opacity = Math.random() * 0.5 + 0.2;
+                const shift = (Math.random() - 0.5) * 200;
+
+                particle.style.setProperty('--duration', `${duration}s`);
+                particle.style.setProperty('--opacity', opacity);
+                particle.style.setProperty('--shift', `${shift}px`);
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${left}%`;
+                particle.style.bottom = '-20px';
+                particle.style.animationDelay = `${delay}s`;
+
+                particlesContainer.appendChild(particle);
+            }
+        };
+
+        createFloatingParticles();
+
+        // Login functionality
+        loginButton.addEventListener('click', () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                showError('Access denied: All fields must be completed.');
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showSuccess('Access granted! Entering multiverse in 3...2...1...');
+                    setTimeout(() => {
+                        window.location.href = 'main.html';
+                    }, 1500);
+                })
+                .catch((error) => {
+                    let errorMsg = 'Access failed: System error.';
+                    if (error.code === 'auth/user-not-found') {
+                        errorMsg = 'No identity found in the multiverse.';
+                    } else if (error.code === 'auth/wrong-password') {
+                        errorMsg = 'Security code mismatch detected.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMsg = 'Invalid quantum ID format.';
+                    }
+                    showError(errorMsg);
+                });
+        });
+
+        // Sign up functionality
+        signupButton.addEventListener('click', () => {
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+
+            if (!name || !email || !password || !confirmPassword) {
+                showError('Identity creation failed: All fields required.');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Security codes do not align.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Security code too weak: Minimum 6 digits required.');
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    return userCredential.user.updateProfile({
+                        displayName: name
+                    }).then(() => {
+                        showSuccess('Identity forged! Access vault now available.');
+                        document.getElementById('signup-name').value = '';
+                        document.getElementById('signup-email').value = '';
+                        document.getElementById('signup-password').value = '';
+                        document.getElementById('signup-confirm-password').value = '';
+                        setTimeout(() => {
+                            loginTab.click();
+                        }, 2000);
+                    });
+                })
+                .catch((error) => {
+                    let errorMsg = 'Identity creation failed: System error.';
+                    if (error.code === 'auth/email-already-in-use') {
+                        errorMsg = 'Quantum ID already exists in the multiverse.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMsg = 'Invalid quantum ID format.';
+                    } else if (error.code === 'auth/weak-password') {
+                        errorMsg = 'Security code too weak.';
+                    }
+                    showError(errorMsg);
+                });
+        });
+
+        // Password reset functionality
+        resetButton.addEventListener('click', () => {
+            const email = document.getElementById('reset-email').value;
+
+            if (!email) {
+                showError('Reset failed: Quantum ID required.');
+                return;
+            }
+
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    showSuccess('Reset signal transmitted. Check your quantum inbox.');
+                    document.getElementById('reset-email').value = '';
+                })
+                .catch((error) => {
+                    let errorMsg = 'Reset failed: System error.';
+                    if (error.code === 'auth/user-not-found') {
+                        errorMsg = 'No identity found in the multiverse.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMsg = 'Invalid quantum ID format.';
+                    }
+                    showError(errorMsg);
+                });
+        });
+
+        // // Check if user is already logged in
+         auth.onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = 'main.html';
+            }
+         });
+
+        // Interactive 3D effects
+        document.addEventListener('mousemove', (e) => {
+            const authContainer = document.querySelector('.auth-container');
+            const moveX = (e.clientX - window.innerWidth / 2) / window.innerWidth * 10;
+            const moveY = (e.clientY - window.innerHeight / 2) / window.innerHeight * 10;
+
+            gsap.to(authContainer, {
+                rotateY: moveX,
+                rotateX: -moveY,
+                duration: 0.5
+            });
+        });
+
+        // Multiverse mode toggle
+        let multiverseMode = false;
+        const toggleMultiverseMode = () => {
+            multiverseMode = !multiverseMode;
+            if (multiverseMode) {
+                document.documentElement.style.setProperty('--primary', '#00ff7b');
+                document.documentElement.style.setProperty('--primary-dark', '#00b359');
+                document.documentElement.style.setProperty('--secondary', '#ff004c');
+                galaxyParams.insideColor = new THREE.Color('#00ff7b');
+                galaxyParams.outsideColor = new THREE.Color('#ff004c');
+                generateGalaxy();
+                showSuccess('Multiverse mode engaged: Variant C-137 accessed.');
+            } else {
+                document.documentElement.style.setProperty('--primary', '#ff00d4');
+                document.documentElement.style.setProperty('--primary-dark', '#b100ff');
+                document.documentElement.style.setProperty('--secondary', '#00eeff');
+                galaxyParams.insideColor = new THREE.Color('#ff00d4');
+                galaxyParams.outsideColor = new THREE.Color('#00eeff');
+                generateGalaxy();
+                showSuccess('Returned to Earth-Prime timeline.');
+            }
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'm' && e.ctrlKey) {
+                toggleMultiverseMode();
+            }
+        });
+    </script>
+</body>
+</html>

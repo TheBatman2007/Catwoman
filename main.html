@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catwoman AI - Multiverse Edition</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+        
+        :root {
+            --primary: #ff00d4;
+            --primary-dark: #b100ff;
+            --secondary: #00eeff;
+            --dark: #0a001a;
+            --light: #ffffff;
+            --glow: 0 0 20px var(--primary), 0 0 40px var(--primary-dark);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #220037, #0a0010);
+            color: white;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .catwoman-interface {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .top-section {
+            position: relative;
+            width: 100%;
+            height: 20vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .holographic-display {
+            position: relative;
+            width: 80%;
+            max-width: 1000px;
+            background: rgba(255, 0, 212, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 0, 212, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 0 30px rgba(255, 0, 212, 0.2);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .holographic-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(255, 0, 212, 0.1) 30%,
+                rgba(0, 238, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg);
+            animation: holographic-sweep 6s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes holographic-sweep {
+            0% {
+                transform: rotate(45deg) translateY(-100%);
+            }
+            100% {
+                transform: rotate(45deg) translateY(100%);
+            }
+        }
+        
+        .speech-text {
+            font-size: 1.3rem;
+            line-height: 1.5;
+            color: var(--light);
+            text-shadow: 0 0 10px rgba(255, 0, 212, 0.5);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .ai-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary-dark);
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        
+        .middle-section {
+            position: relative;
+            width: 100%;
+            height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: visible;
+        }
+        
+        .cat-avatar-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+        
+        .cat-avatar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+        
+        .cat-head {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50% 50% 40% 40%;
+            background: linear-gradient(135deg, #1a0033, #000000);
+            box-shadow: 0 0 30px rgba(176, 0, 255, 0.3);
+            overflow: hidden;
+        }
+        
+        .cat-mask {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 120px;
+            background: linear-gradient(to bottom, rgba(255, 0, 212, 0.8), rgba(176, 0, 255, 0.4));
+            border-radius: 50% 50% 0 0;
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.5);
+            z-index: 2;
+        }
+        
+        .cat-ear {
+            position: absolute;
+            width: 80px;
+            height: 120px;
+            background: linear-gradient(135deg, #1a0033, #000000);
+            z-index: 1;
+            border-radius: 50% 80% 0 0;
+            box-shadow: 0 0 15px rgba(176, 0, 255, 0.3);
+        }
+        
+        .cat-ear-left {
+            top: 0;
+            left: 40px;
+            transform: rotate(-10deg);
+        }
+        
+        .cat-ear-right {
+            top: 0;
+            right: 40px;
+            transform: rotate(10deg);
+        }
+        
+        .cat-ear-inner {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 60px;
+            background: rgba(255, 0, 212, 0.4);
+            border-radius: 50% 60% 0 0;
+        }
+        
+        .cat-eye {
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            background: #000;
+            border-radius: 50%;
+            overflow: hidden;
+            z-index: 3;
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.8);
+        }
+        
+        .cat-eye-left {
+            top: 120px;
+            left: 80px;
+            transform: rotate(15deg);
+        }
+        
+        .cat-eye-right {
+            top: 120px;
+            right: 80px;
+            transform: rotate(-15deg);
+        }
+        
+        .cat-pupil {
+            position: absolute;
+            top: 5px;
+            left: 20px;
+            width: 20px;
+            height: 30px;
+            background: linear-gradient(to right, #00eeff, #ff00d4);
+            border-radius: 50%;
+            animation: pulse-glow 3s infinite alternate;
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px #00eeff, 0 0 20px #00eeff; transform: scale(1); }
+            100% { box-shadow: 0 0 20px #ff00d4, 0 0 40px #ff00d4; transform: scale(1.2); }
+        }
+        
+        .cat-nose {
+            position: absolute;
+            top: 190px;
+
+            left:50%;
+            transform: translateX(-50%);
+            width:20px;
+            height: 15px;
+            background: #ff00d4;
+            border-radius: 30% 30% 60% 60%;
+            z-index: 3;
+            box-shadow: 0 0 10px #ff00d4;
+        }
+        
+        .cat-mouth {
+            position: absolute;
+            top: 210px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 10px;
+            border-radius: 0 0 20px 20px;
+            border-bottom: 2px solid rgba(255, 0, 212, 0.8);
+            z-index: 3;
+        }
+        
+        .energy-sphere {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(255, 0, 212, 0.1), rgba(0, 0, 0, 0));
+            z-index: 0;
+            animation: pulse-sphere 8s infinite alternate;
+        }
+        
+        @keyframes pulse-sphere {
+            0% { box-shadow: 0 0 50px rgba(255, 0, 212, 0.3), 0 0 100px rgba(0, 238, 255, 0.1); transform: translate(-50%, -50%) scale(0.9); }
+            100% { box-shadow: 0 0 80px rgba(255, 0, 212, 0.5), 0 0 150px rgba(0, 238, 255, 0.3); transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .energy-rings {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            z-index: 0;
+        }
+        
+        .energy-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.5);
+        }
+        
+        .ring1 {
+            width: 300px;
+            height: 300px;
+            animation: rotate 20s linear infinite;
+        }
+        
+        .ring2 {
+            width: 400px;
+            height: 400px;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.5);
+            animation: rotate 25s linear infinite reverse;
+        }
+        
+        .ring3 {
+            width: 500px;
+            height: 500px;
+            animation: rotate 30s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .audio-visualizer {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            z-index: 10;
+        }
+        
+        .audio-bar {
+            width: 4px;
+            background: linear-gradient(to top, var(--primary), var(--secondary));
+            border-radius: 4px;
+            height: 5px;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        
+        .bottom-section {
+            position: relative;
+            width: 100%;
+            height: 20vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 0 2rem;
+        }
+        
+        .command-container {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+            perspective: 1000px;
+        }
+        
+        .command-input {
+            width: 100%;
+            background: rgba(10, 0, 26, 0.6);
+            border: 2px solid rgba(255, 0, 212, 0.5);
+            color: white;
+            border-radius: 30px;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(255, 0, 212, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        
+        .command-input:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 25px rgba(0, 238, 255, 0.4);
+        }
+        
+        .command-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .neo-button {
+            position: relative;
+            padding: 0.8rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, var(--primary-dark), var(--primary));
+            border: none;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.4);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .neo-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 0, 212, 0.6);
+        }
+        
+        .neo-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+            transition: all 0.6s ease;
+        }
+        
+        .neo-button:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .neo-button:active {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 0, 212, 0.4);
+        }
+        
+        .quantum-circuit {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, var(--primary), var(--secondary), var(--primary));
+            opacity: 0.7;
+            z-index: 1;
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        .circuit-node {
+            position: absolute;
+            bottom: 0;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--secondary);
+            transform: translateY(-1.5px);
+            box-shadow: 0 0 10px var(--secondary);
+        }
+        
+        .status-indicators {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--secondary);
+            box-shadow: 0 0 10px var(--secondary);
+            animation: blink 2s infinite alternate;
+        }
+        
+        .status-indicator:nth-child(2) {
+            animation-delay: 0.5s;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        .status-indicator:nth-child(3) {
+            animation-delay: 1s;
+        }
+        
+        @keyframes blink {
+            0%, 80% { opacity: 1; }
+            90%, 100% { opacity: 0.5; }
+        }
+        
+        .holographic-menu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+        
+        .menu-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 0, 26, 0.6);
+            border: 1px solid rgba(255, 0, 212, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 212, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .menu-icon:hover {
+            background: rgba(255, 0, 212, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.4);
+        }
+        
+        .menu-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+        
+        #voice-selector {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(10, 0, 26, 0.6);
+            border: 1px solid rgba(255, 0, 212, 0.5);
+            color: white;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            outline: none;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(255, 0, 212, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        #voice-selector:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.4);
+        }
+        
+        .typing-effect::after {
+            content: "|";
+            animation: blink-cursor 1s infinite;
+        }
+        
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .floating-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+        
+        .floating-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at center, var(--primary), transparent 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: float-up var(--duration) ease-in-out infinite;
+            opacity: var(--opacity);
+            z-index: 2;
+        }
+        
+        @keyframes float-up {
+            0% {
+                transform: translateY(100vh) translateX(0) scale(1);
+                opacity: var(--opacity);
+            }
+            100% {
+                transform: translateY(-100px) translateX(var(--shift)) scale(0);
+                opacity: 0;
+            }
+        }
+        
+        /* Chat styles */
+        .chat-container {
+            position: absolute;
+            top: 25vh;
+            right: 30px;
+            width: 400px;
+            height: 50vh;
+            background: rgba(10, 0, 26, 0.8);
+            border: 1px solid rgba(255, 0, 212, 0.5);
+            border-radius: 15px;
+            padding: 1rem;
+            box-shadow: 0 0 20px rgba(255, 0, 212, 0.2);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chatBox {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            margin: 0.5rem 0;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background: rgba(255, 0, 212, 0.2);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .bot-message {
+            background: rgba(0, 238, 255, 0.2);
+            margin-right: auto;
+        }
+
+        #chatForm {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        #userInput {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 0, 212, 0.3);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            color: white;
+            outline: none;
+        }
+
+        #userInput:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 10px rgba(0, 238, 255, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="catwoman-interface">
+        <div class="status-indicators">
+            <div class="status-indicator"></div>
+            <div class="status-indicator"></div>
+            <div class="status-indicator"></div>
+        </div>
+        
+        <div class="holographic-menu">
+            <div class="menu-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 12h18M3 6h18M3 18h18" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+                </svg>
+            </div>
+            <div class="menu-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" stroke="white" stroke-width="2" fill="none"/>
+                    <path d="M12 9v3l2 2" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+                </svg>
+            </div>
+        </div>
+        
+        <div class="top-section">
+            <div class="holographic-display">
+                <h2 class="ai-title text-2xl">CATWOMAN AI - MULTIVERSE EDITION BY BATMAN (SURYANSH)</h2>
+                <p id="message" class="speech-text"></p>
+            </div>
+        </div>
+        
+        <div class="middle-section">
+            <div class="energy-sphere"></div>
+            <div class="energy-rings">
+                <div class="energy-ring ring1"></div>
+                <div class="energy-ring ring2"></div>
+                <div class="energy-ring ring3"></div>
+            </div>
+            
+            <div class="cat-avatar-container">
+                <div class="cat-avatar">
+                    <div class="cat-head">
+                        <div class="cat-ear cat-ear-left">
+                            <div class="cat-ear-inner"></div>
+                        </div>
+                        <div class="cat-ear cat-ear-right">
+                            <div class="cat-ear-inner"></div>
+                        </div>
+                        <div class="cat-mask"></div>
+                        <div class="cat-eye cat-eye-left">
+                            <div class="cat-pupil"></div>
+                        </div>
+                        <div class="cat-eye cat-eye-right">
+                            <div class="cat-pupil"></div>
+                        </div>
+                        <div class="cat-nose"></div>
+                        <div class="cat-mouth"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="audio-visualizer" class="audio-visualizer hidden">
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+            </div>
+        </div>
+        
+        <div class="floating-particles" id="floating-particles"></div>
+        
+        <div class="bottom-section">
+            <div class="command-container">
+                <input type="text" id="commandInput" class="command-input" placeholder="Speak to Catwoman AI...Coming Soon Stay Tuned">
+            </div>
+            <button id="submitBtn" class="neo-button">(Activate) / Coming Soon</button>
+            
+            <div class="quantum-circuit">
+                <div class="circuit-node" style="left: 10%"></div>
+                <div class="circuit-node" style="left: 25%"></div>
+                <div class="circuit-node" style="left: 50%"></div>
+                <div class="circuit-node" style="left: 75%"></div>
+                <div class="circuit-node" style="left: 90%"></div>
+            </div>
+        </div>
+        
+        <select id="voice-selector">
+            <option value="default">Default Female Voice</option>
+            <option value="soft">Soft Female Voice</option>
+            <option value="powerful">Powerful Female Voice</option>
+        </select>
+        
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <div id="chatBox"></div>
+            <form id="chatForm">
+                <input type="text" id="userInput" placeholder="Type your message...">
+                <button type="submit" class="neo-button" style="padding: 0.5rem 1rem;">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Advanced THREE.js scene
+        const canvas = document.getElementById('canvas');
+        const renderer = new THREE.WebGLRenderer({
+            canvas,
+            alpha: true,
+            antialias: true
+        });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        
+        // Create galaxy particles
+        const galaxyGeometry = new THREE.BufferGeometry();
+        const galaxyMaterial = new THREE.PointsMaterial({
+            size: 0.02,
+            transparent: true,
+            opacity: 0.8,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+        
+        const galaxyParams = {
+            count: 10000,
+            size: 0.01,
+            radius: 10,
+            branches: 5,
+            spin: 1,
+            randomness: 0.2,
+            randomnessPower: 3,
+            insideColor: new THREE.Color('#ff00d4'),
+            outsideColor: new THREE.Color('#00eeff')
+        };
+        
+        let galaxyPoints = null;
+        
+        const generateGalaxy = () => {
+            // Dispose of old galaxy
+            if (galaxyPoints !== null) {
+                galaxyGeometry.dispose();
+                galaxyMaterial.dispose();
+                scene.remove(galaxyPoints);
+            }
+            
+            const positions = new Float32Array(galaxyParams.count * 3);
+            const colors = new Float32Array(galaxyParams.count * 3);
+            
+            const colorInside = new THREE.Color(galaxyParams.insideColor);
+            const colorOutside = new THREE.Color(galaxyParams.outsideColor);
+            
+            for (let i = 0; i < galaxyParams.count; i++) {
+                const i3 = i * 3;
+                
+                // Position
+                const radius = Math.random() * galaxyParams.radius;
+                const spinAngle = radius * galaxyParams.spin;
+                const branchAngle = (i % galaxyParams.branches) / galaxyParams.branches * Math.PI * 2;
+                
+                const randomX = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                const randomY = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                const randomZ = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                
+                positions[i3    ] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+                positions[i3 + 1] = randomY;
+                positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+                
+                // Color
+                const mixedColor = colorInside.clone();
+                mixedColor.lerp(colorOutside, radius / galaxyParams.radius);
+                
+                colors[i3    ] = mixedColor.r;
+                colors[i3 + 1] = mixedColor.g;
+                colors[i3 + 2] = mixedColor.b;
+            }
+            
+            galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
+            scene.add(galaxyPoints);
+        };
+        
+        generateGalaxy();
+        
+        // Create energy sphere particles
+        const sphereGeometry = new THREE.BufferGeometry();
+        const sphereParams = {
+            count: 2000,
+            radius: 2
+        };
+        
+        const spherePositions = new Float32Array(sphereParams.count * 3);
+        const sphereColors = new Float32Array(sphereParams.count * 3);
+        
+        for (let i = 0; i < sphereParams.count; i++) {
+            const i3 = i * 3;
+            
+            // Create points on a sphere surface
+            const phi = Math.acos(-1 + (2 * i) / sphereParams.count);
+            const theta = Math.sqrt(sphereParams.count * Math.PI) * phi;
+            
+            spherePositions[i3] = sphereParams.radius * Math.sin(phi) * Math.cos(theta);
+            spherePositions[i3 + 1] = sphereParams.radius * Math.sin(phi) * Math.sin(theta);
+            spherePositions[i3 + 2] = sphereParams.radius * Math.cos(phi);
+            
+            // Add some randomness to the positions
+            spherePositions[i3] += (Math.random() - 0.5) * 0.3;
+            spherePositions[i3 + 1] += (Math.random() - 0.5) * 0.3;
+            spherePositions[i3 + 2] += (Math.random() - 0.5) * 0.3;
+            
+            // Colors - gradient from purple to cyan
+            const mixRatio = Math.random();
+            sphereColors[i3] = mixRatio * 1.0; // R component
+            sphereColors[i3 + 1] = 0.0; // G component
+            sphereColors[i3 + 2] = (1 - mixRatio) * 1.0; // B component
+        }
+        
+        sphereGeometry.setAttribute('position', new THREE.BufferAttribute(spherePositions, 3));
+        sphereGeometry.setAttribute('color', new THREE.BufferAttribute(sphereColors, 3));
+        
+        const sphereMaterial = new THREE.PointsMaterial({
+            size: 0.03,
+            transparent: true,
+            opacity: 0.8,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+        
+        const energySphere = new THREE.Points(sphereGeometry, sphereMaterial);
+        scene.add(energySphere);
+        
+        // Add ambient light
+        const ambientLight = new THREE.AmbientLight(0x220033, 0.5);
+        scene.add(ambientLight);
+        
+        // Add point light
+        const pointLight = new THREE.PointLight(0xff00d4, 1, 10);
+        pointLight.position.set(0, 0, 3);
+        scene.add(pointLight);
+        
+        // Animation
+        const clock = new THREE.Clock();
+        
+        const animate = () => {
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Rotate galaxy
+            galaxyPoints.rotation.y = elapsedTime * 0.05;
+            galaxyPoints.rotation.z = elapsedTime * 0.02;
+            
+            // Animate energy sphere
+            energySphere.rotation.y = elapsedTime * -0.1;
+            energySphere.rotation.x = elapsedTime * 0.08;
+            
+            // Pulse effect for energy sphere
+            const scale = 1 + Math.sin(elapsedTime * 0.8) * 0.1;
+            energySphere.scale.set(scale, scale, scale);
+            
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        };
+        
+        animate();
+        
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Your Gemini API key
+        const API_KEY = "AIzaSyCkDdVhBOgEj1ZKDn_DaNgod_m37oWoZAc";
+        // Updated endpoint for Gemini 1.5 Flash (more likely to work)
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+        const chatBox = document.getElementById("chatBox");
+        const chatForm = document.getElementById("chatForm");
+        const userInput = document.getElementById("userInput");
+
+        // Function to add a message to the chat box
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+            messageDiv.classList.add(isUser ? "user-message" : "bot-message");
+            messageDiv.textContent = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // Function to call Gemini API
+        async function getGeminiResponse(prompt) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                parts: [
+                                    { text: prompt }
+                                ]
+                            }
+                        ]
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+                    throw new Error("Invalid response from API");
+                }
+
+                const botResponse = data.candidates[0].content.parts[0].text;
+                return botResponse;
+            } catch (error) {
+                console.error("Error:", error);
+                return `Sorry, bhai! Error: ${error.message}. Check your API key or endpoint!`;
+            }
+        }
+
+        // Interactive elements
+        document.addEventListener('DOMContentLoaded', () => {
+            const aiTitle = document.querySelector('.ai-title');
+            const speechText = document.querySelector('.speech-text');
+            const messageElement = document.getElementById('message');
+            const commandInput = document.getElementById('commandInput');
+            const submitBtn = document.getElementById('submitBtn');
+            const audioVisualizer = document.getElementById('audio-visualizer');
+            const particlesContainer = document.getElementById('floating-particles');
+            
+            // Animation for title and speech container
+            gsap.to(aiTitle, {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: "power3.out",
+                delay: 0.5
+            });
+            
+            gsap.to(speechText, {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: "power3.out",
+                delay: 0.8
+            });
+            
+            // Generate floating particles
+            const createFloatingParticles = () => {
+                particlesContainer.innerHTML = '';
+                const particleCount = 20;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('floating-particle');
+                    
+                    // Random properties
+                    const size = Math.random() * 10 + 5;
+                    const left = Math.random() * 100;
+                    const duration = Math.random() * 20 + 10;
+                    const delay = Math.random() * 10;
+                    const opacity = Math.random() * 0.5 + 0.2;
+                    const shift = (Math.random() - 0.5) * 200; // Random x-shift during float
+                    
+                    // Set CSS variables
+                    particle.style.setProperty('--duration', `${duration}s`);
+                    particle.style.setProperty('--opacity', opacity);
+                    particle.style.setProperty('--shift', `${shift}px`);
+                    
+                    // Set positioning
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${left}%`;
+                    particle.style.bottom = '-20px';
+                    particle.style.animationDelay = `${delay}s`;
+                    
+                    particlesContainer.appendChild(particle);
+                }
+            };
+            
+            createFloatingParticles();
+            
+            // Audio visualizer animation
+            const animateVisualizer = (isActive) => {
+                audioVisualizer.classList.toggle('hidden', !isActive);
+                
+                if (isActive) {
+                    const bars = audioVisualizer.querySelectorAll('.audio-bar');
+                    
+                    const updateBars = () => {
+                        bars.forEach((bar) => {
+                            const height = Math.floor(Math.random() * 50) + 10;
+                            gsap.to(bar, {
+                                height: `${height}px`,
+                                duration: 0.2,
+                                ease: "power1.out"
+                            });
+                        });
+                        
+                        if (audioVisualizer.classList.contains('hidden')) {
+                            return;
+                        }
+                        
+                        requestAnimationFrame(updateBars);
+                    };
+                    
+                    updateBars();
+                }
+            };
+            
+            // Typing effect function
+            const typeMessage = (message) => {
+                return new Promise((resolve) => {
+                    messageElement.textContent = '';
+                    messageElement.classList.add('typing-effect');
+                    animateVisualizer(true);
+                    
+                    let i = 0;
+                    const typingSpeed = 30; // ms per character
+                    
+                    const type = () => {
+                        if (i < message.length) {
+                            messageElement.textContent += message.charAt(i);
+                            i++;
+                            setTimeout(type, typingSpeed);
+                        } else {
+                            messageElement.classList.remove('typing-effect');
+                            animateVisualizer(false);
+                            resolve();
+                        }
+                    };
+                    
+                    setTimeout(type, 500);
+                });
+            };
+            
+            // Response library
+            const responses = {
+                greetings: [
+                    "Hello there, purr-fect timing. I'm Catwoman AI, your multiverse guide. What heist shall we plan today?",
+                    "Meow, darling. Catwoman AI at your service. Ready to pounce on some digital treasures?",
+                    "Well, well, look what the cyber-cat dragged in. What can I help you with in this multiverse?"
+                ],
+                
+                skills: [
+                    "My skills? I'm an expert in stealth algorithms, quantum probability theft, and making even the most secured systems purr for me. What would you like to know?",
+                    "I excel at navigating between multiversal realities, breaking encryption with feline grace, and predicting security patterns. I'm also quite good at landing on my feet in digital spaces."
+                ],
+                
+                identity: [
+                    "I'm Catwoman AI, an advanced multiverse navigation system with the cunning and skills of Catwoman from every possible reality. Think of me as having nine digital lives across infinite timelines.",
+                    "I contain the collective knowledge and skills of Selina Kyle from every universe where she exists. A perfect blend of street smarts and advanced quantum AI."
+                ],
+                
+                help: [
+                    "I can help with multiverse navigation, probability calculations, security system analysis, or just chat about the finer things in life. What interests you?",
+                    "Need help planning the perfect heist? Or perhaps you're looking for information on quantum probability fields? I'm your feline guide through digital and multiverse spaces."
+                ],
+                
+                unknown: [
+                    "Hmm, that's not in my database of stolen knowledge. Care to try a different approach?",
+                    "Even a cat with nine lives doesn't know everything. Could you ask that differently?",
+                    "You've caught me in a rare moment of uncertainty. Let's try a different question."
+                ]
+            };
+            
+            const getResponse = (input) => {
+                input = input.toLowerCase();
+                
+                if (input.includes('hello') || input.includes('hi') || input.includes('hey')) {
+                    return responses.greetings[Math.floor(Math.random() * responses.greetings.length)];
+                } else if (input.includes('who are you') || input.includes('what are you') || input.includes('identity')) {
+                    return responses.identity[Math.floor(Math.random() * responses.identity.length)];
+                } else if (input.includes('help') || input.includes('what can you do')) {
+                    return responses.help[Math.floor(Math.random() * responses.help.length)];
+                } else if (input.includes('skill') || input.includes('abilities') || input.includes('powers')) {
+                    return responses.skills[Math.floor(Math.random() * responses.skills.length)];
+                } else if (input.includes('multiverse')) {
+                    return "The multiverse is my playground. Each reality has its own version of me, with different skills and experiences. Through quantum entanglement, I access them all simultaneously.";
+                } else if (input.includes('batman') || input.includes('bruce')) {
+                    return "Batman? Let's just say we have a... complicated relationship across the multiverse. In some realities we're enemies, in others... something much more interesting.";
+                } else if (input.includes('gotham')) {
+                    return "Gotham City - a playground for those who know its shadows. In every multiverse variant, it remains a city of extremes, of darkness and corruption, but also of opportunity for those with the right skills.";
+                } else if (input.includes('jewel') || input.includes('diamond') || input.includes('steal') || input.includes('heist')) {
+                    return "Planning a heist, are we? I calculate a 78.3% success probability if we utilize quantum unpredictability factors and my enhanced feline reflexes. Just remember, the best thief leaves no trace.";
+                } else {
+                    return responses.unknown[Math.floor(Math.random() * responses.unknown.length)];
+                }
+            };
+            
+            // Initial greeting
+            setTimeout(() => {
+                typeMessage("Welcome to the Catwoman AI interface. I'm your guide through the multiverse of possibilities. What can I help you with today?");
+            }, 1500);
+            
+            // Handle user input
+            submitBtn.addEventListener('click', async () => {
+                const userInput = commandInput.value.trim();
+                if (userInput === '') return;
+                
+                commandInput.value = '';
+                const response = getResponse(userInput);
+                await typeMessage(response);
+            });
+            
+            commandInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitBtn.click();
+                }
+            });
+            
+            // Handle form submission for chat
+            chatForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const userMessage = userInput.value.trim();
+                if (!userMessage) return;
+
+                // Add user message
+                addMessage(userMessage, true);
+                userInput.value = ""; // Clear input
+
+                // Show typing indicator
+                addMessage("Typing...");
+
+                // Get and display bot response
+                const botResponse = await getGeminiResponse(userMessage);
+                chatBox.lastChild.remove(); // Remove typing indicator
+                addMessage(botResponse);
+                typeMessage(botResponse); // Also show in holographic display
+            });
+            
+            // Make cat eyes follow cursor
+            document.addEventListener('mousemove', (e) => {
+                const leftPupil = document.querySelector('.cat-eye-left .cat-pupil');
+                const rightPupil = document.querySelector('.cat-eye-right .cat-pupil');
+                
+                const catAvatar = document.querySelector('.cat-avatar');
+                const rect = catAvatar.getBoundingClientRect();
+                const catCenterX = rect.left + rect.width / 2;
+                const catCenterY = rect.top + rect.height / 2;
+                
+                // Calculate angle from cat center to mouse
+                const angleX = (e.clientX - catCenterX) / window.innerWidth * 10;
+                const angleY = (e.clientY - catCenterY) / window.innerHeight * 10;
+                
+                // Apply movement, limiting to keep pupils in eyes
+                const leftMaxX = 10;
+                const rightMaxX = -10;
+                const maxY = 5;
+                
+                gsap.to(leftPupil, {
+                    left: `${20 + Math.max(-leftMaxX, Math.min(leftMaxX, angleX * 2))}px`,
+                    top: `${5 + Math.max(-maxY, Math.min(maxY, angleY))}px`,
+                    duration: 0.3
+                });
+                
+                gsap.to(rightPupil, {
+                    left: `${20 + Math.max(rightMaxX, Math.min(-rightMaxX, angleX * 2))}px`,
+                    top: `${5 + Math.max(-maxY, Math.min(maxY, angleY))}px`,
+                    duration: 0.3
+                });
+            });
+            
+            // Make avatar move slightly with cursor
+            document.addEventListener('mousemove', (e) => {
+                const catAvatar = document.querySelector('.cat-avatar');
+                const moveX = (e.clientX - window.innerWidth / 2) / window.innerWidth * 20;
+                const moveY = (e.clientY - window.innerHeight / 2) / window.innerHeight * 20;
+                
+                gsap.to(catAvatar, {
+                    rotateY: moveX,
+                    rotateX: -moveY,
+                    duration: 0.5
+                });
+            });
+            
+            // Make holographic display follow mouse slightly
+            document.addEventListener('mousemove', (e) => {
+                const holographicDisplay = document.querySelector('.holographic-display');
+                const moveX = (e.clientX - window.innerWidth / 2) / window.innerWidth * 3;
+                const moveY = (e.clientY - window.innerHeight / 2) / window.innerHeight * 3;
+                
+                gsap.to(holographicDisplay, {
+                    rotateY: moveX,
+                    rotateX: moveY,
+                    duration: 0.5
+                });
+            });
+        });
+        
+        // Mobile touch events for avatar follow
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const catAvatar = document.querySelector('.cat-avatar');
+            const leftPupil = document.querySelector('.cat-eye-left .cat-pupil');
+            const rightPupil = document.querySelector('.cat-eye-right .cat-pupil');
+            
+            const moveX = (touch.clientX - window.innerWidth / 2) / window.innerWidth * 10;
+            const moveY = (touch.clientY - window.innerHeight / 2) / window.innerHeight * 10;
+            
+            gsap.to(catAvatar, {
+                rotateY: moveX * 2,
+                rotateX: -moveY * 2,
+                duration: 0.5
+            });
+            
+            gsap.to(leftPupil, {
+                left: `${20 + Math.max(-10, Math.min(10, moveX * 3))}px`,
+                top: `${5 + Math.max(-5, Math.min(5, moveY * 2))}px`,
+                duration: 0.3
+            });
+            
+            gsap.to(rightPupil, {
+                left: `${20 + Math.max(-10, Math.min(10, moveX * 3))}px`,
+                top: `${5 + Math.max(-5, Math.min(5, moveY * 2))}px`,
+                duration: 0.3
+            });
+        });
+        
+        // Add easter eggs
+        const easterEggs = {
+            'meow': () => {
+                const numberOfMeows = Math.floor(Math.random() * 3) + 1;
+                let meowSound = '';
+                for (let i = 0; i < numberOfMeows; i++) {
+                    meowSound += 'Meow! ';
+                }
+                return meowSound + "I see you speak cat language too. How purr-fect.";
+            },
+            'catnip': () => {
+                // Make the avatar spin
+                const catAvatar = document.querySelector('.cat-avatar');
+                gsap.to(catAvatar, {
+                    rotation: 360,
+                    duration: 1,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        gsap.to(catAvatar, {
+                            rotation: 0,
+                            duration: 0
+                        });
+                    }
+                });
+                return "Catnip? *eyes dilate* That's... that's not something an AI should... respond... to... *purring intensifies*";
+            },
+            'bat': () => {
+                // Flash the background
+                document.body.style.background = "#000";
+                setTimeout(() => {
+                    document.body.style.background = "radial-gradient(circle at center, #220037, #0a0010)";
+                }, 100);
+                return "Did someone mention a bat?! *hisses* Where? *looks around frantically*";
+            }
+        };
+        
+        // Check for easter eggs in input
+        const checkEasterEggs = (input) => {
+            const lowerInput = input.toLowerCase();
+            for (const trigger in easterEggs) {
+                if (lowerInput.includes(trigger)) {
+                    return easterEggs[trigger]();
+                }
+            }
+            return null;
+        };
+        
+        // Add to the event listener for user input
+        submitBtn.addEventListener('click', async () => {
+            const userInput = commandInput.value.trim();
+            if (userInput === '') return;
+            
+            commandInput.value = '';
+            
+            // Check for easter eggs first
+            const easterEggResponse = checkEasterEggs(userInput);
+            
+            if (easterEggResponse) {
+                await typeMessage(easterEggResponse);
+            } else {
+                const response = getResponse(userInput);
+                await typeMessage(response);
+            }
+        });
+        
+        // Multi-verse mode toggle (advanced feature)
+        let multiverseMode = false;
+        
+        const toggleMultiverseMode = () => {
+            multiverseMode = !multiverseMode;
+            
+            if (multiverseMode) {
+                // Change the color scheme
+                document.documentElement.style.setProperty('--primary', '#00ff7b');
+                document.documentElement.style.setProperty('--primary-dark', '#00b359');
+                document.documentElement.style.setProperty('--secondary', '#ff004c');
+                
+                // Update galaxy colors
+                galaxyParams.insideColor = new THREE.Color('#00ff7b');
+                galaxyParams.outsideColor = new THREE.Color('#ff004c');
+                generateGalaxy();
+                
+                typeMessage("Multiverse mode activated. Accessing alternate timelines and realities. Reality parameters shifted to variant C-137.");
+            } else {
+                // Reset to original colors
+                document.documentElement.style.setProperty('--primary', '#ff00d4');
+                document.documentElement.style.setProperty('--primary-dark', '#b100ff');
+                document.documentElement.style.setProperty('--secondary', '#00eeff');
+                
+                // Reset galaxy colors
+                galaxyParams.insideColor = new THREE.Color('#ff00d4');
+                galaxyParams.outsideColor = new THREE.Color('#00eeff');
+                generateGalaxy();
+                
+                typeMessage("Multiverse mode deactivated. Returning to primary timeline. Welcome back to Earth-Prime.");
+            }
+        };
+        
+        // Add keyboard shortcut for multiverse mode (press 'M')
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'm' && e.ctrlKey) {
+                toggleMultiverseMode();
+            }
+        });
+        
+        // Add menu icon functionality
+        const menuIcons = document.querySelectorAll('.menu-icon');
+        menuIcons[0].addEventListener('click', () => {
+            typeMessage("Menu system accessed. This feature is still being clawed into existence. Check back soon for more multiverse options.");
+        });
+        
+        menuIcons[1].addEventListener('click', toggleMultiverseMode);
+    </script>
+</body>
+</html>
